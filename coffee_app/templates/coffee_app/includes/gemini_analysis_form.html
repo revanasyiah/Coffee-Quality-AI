@@ -1,0 +1,18 @@
+{% if insights_analysis_type == analysis_type %}
+  {% if insights_analysis %}
+    <div class="alert alert-info mt-3 mb-0" role="status">
+      <strong>Analisis Gemini</strong>
+      <div>{{ insights_analysis|linebreaks }}</div>
+    </div>
+  {% elif insights_analysis_error %}
+    <div class="alert alert-danger mt-3 mb-0" role="alert">{{ insights_analysis_error }}</div>
+  {% endif %}
+{% endif %}
+<form class="gemini-insight-form mt-3" method="post" action="{% url 'coffee_app:analyze_insight' analysis_type %}">
+  {% csrf_token %}
+  <button class="btn btn-coffee" type="submit">
+    <span class="spinner-border spinner-border-sm me-2 d-none" aria-hidden="true"></span>
+    <span class="gemini-insight-label">Analisis {{ analysis_title }} dengan Gemini</span>
+  </button>
+  <p class="gemini-insight-status small text-muted mt-2 mb-0" role="status" aria-live="polite"></p>
+</form>

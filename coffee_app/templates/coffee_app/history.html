@@ -1,0 +1,16 @@
+{% extends 'coffee_app/base.html' %}
+{% block title %}Riwayat · Coffee Quality AI{% endblock %}
+{% block content %}
+<h2 class="mb-3">Riwayat Prediksi</h2>
+{% if items %}
+<div class="card card-coffee"><div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+  <thead><tr><th>Waktu</th><th>Negara</th><th>Varietas</th><th>Pengolahan</th><th>Estimasi</th><th>Kategori</th><th></th></tr></thead>
+  <tbody>{% for i in items %}<tr>
+    <td>{{ i.created_at|date:"d M Y H:i" }}</td><td>{{ i.country }}</td><td>{{ i.variety }}</td><td>{{ i.processing_method }}</td>
+    <td><strong>{{ i.predicted_score|floatformat:2 }}</strong></td><td>{{ i.category }}</td>
+    <td><a href="{% url 'coffee_app:result' i.pk %}">Detail</a></td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% else %}
+<div class="alert alert-info">Belum ada riwayat. <a href="{% url 'coffee_app:predict' %}">Buat prediksi pertama</a>.</div>
+{% endif %}
+{% endblock %}

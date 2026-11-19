@@ -1,0 +1,93 @@
+{% extends 'coffee_app/base.html' %}{% load static %}
+{% block title %}Dashboard · Coffee Quality AI{% endblock %}
+{% block content %}
+<section class="hero p-4 p-md-5 mb-4">
+  <h1 class="display-6 fw-bold"><img class="hero-coffee-beans" src="{% static 'images/coffee-beans.png' %}" alt="" width="48" height="48"> Coffee Quality AI</h1>
+  <p class="lead mb-3">Estimasi skor kualitas kopi (<em>Total Cup Points</em>) dari asal, varietas, pengolahan, dan kondisi fisik biji, menggunakan Machine Learning.</p>
+  <a class="btn btn-light btn-lg" href="{% url 'coffee_app:predict' %}">Mulai prediksi →</a>
+  <a class="btn btn-outline-light btn-lg ms-2" href="{% url 'coffee_app:insights' %}">Lihat visualisasi</a>
+</section>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num">{{ meta.n_total }}</div><div class="stat-lbl">Sampel kopi</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num">{{ meta.n_countries }}</div><div class="stat-lbl">Negara asal</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num">{{ meta.target_stats.mean|floatformat:2 }}</div><div class="stat-lbl">Rata-rata Total Cup Points</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num">{{ meta.target_stats.min|floatformat:1 }}–{{ meta.target_stats.max|floatformat:1 }}</div><div class="stat-lbl">Rentang skor</div></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="card card-coffee h-100"><div class="card-body">
+      <h5 class="card-title">Informasi model</h5>
+      <ul class="list-unstyled mb-0 small">
+        <li><strong>Algoritma terbaik:</strong> {{ meta.best_model }}</li>
+        <li><strong>Target:</strong> {{ meta.target }} (regresi)</li>
+        <li><strong>Fitur ({{ meta.features|length }}):</strong> {{ meta.features|join:", " }}</li>
+        <li><strong>Data latih / uji:</strong> {{ meta.n_train }} / {{ meta.n_test }}</li>
+        <li><strong>MAE uji:</strong> {{ meta.test_metrics_best.MAE|floatformat:2 }} poin</li>
+        <li><strong>RMSE uji:</strong> {{ meta.test_metrics_best.RMSE|floatformat:2 }} poin</li>
+        <li><strong>R² uji:</strong> {{ meta.test_metrics_best.R2|floatformat:3 }}</li>
+        <li><strong>Dilatih:</strong> {{ meta.trained_at }}</li>
+      </ul>
+      <div class="alert alert-warning small mt-3 mb-0">Model hanya memakai informasi di luar rasa (asal, pengolahan, kondisi fisik). 10 skor sensorik sengaja <strong>tidak</strong> dipakai karena penjumlahannya adalah target itu sendiri (<em>data leakage</em>). Karena itu akurasinya moderat dan jujur.</div>
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card card-coffee h-100"><div class="card-body text-center">
+      <h5 class="card-title text-start">Distribusi kategori kualitas</h5>
+      <img class="img-fluid" src="{% static 'images/dist_kategori.png' %}" alt="Distribusi kategori kualitas kopi">
+      {% if dashboard_analysis_type == "categories" %}
+        {% if dashboard_analysis %}
+          <div class="alert alert-info text-start mt-3 mb-0" role="status">
+            <strong>Analisis Gemini</strong>
+            <div>{{ dashboard_analysis|linebreaks }}</div>
+          </div>
+        {% elif dashboard_analysis_error %}
+          <div class="alert alert-danger text-start mt-3 mb-0" role="alert">{{ dashboard_analysis_error }}</div>
+        {% endif %}
+      {% endif %}
+      <form class="gemini-chart-form text-start mt-3" method="post" action="{% url 'coffee_app:analyze_dashboard_chart' 'categories' %}">
+        {% csrf_token %}
+        <button class="btn btn-coffee" type="submit">
+          <span class="spinner-border spinner-border-sm me-2 d-none" aria-hidden="true"></span>
+          <span>Analisis distribusi kategori dengan Gemini</span>
+        </button>
+        <p class="gemini-chart-status small text-muted mt-2 mb-0" role="status" aria-live="polite"></p>
+      </form>
+    </div></div>
+  </div>
+</div>
+<div class="card card-coffee mb-4"><div class="card-body text-center">
+  <h5 class="card-title text-start">Distribusi Total Cup Points</h5>
+  <img class="img-fluid" style="max-height:380px" src="{% static 'images/dist_total_cup_points.png' %}" alt="Histogram Total Cup Points">
+  {% if dashboard_analysis_type == "total_points" %}
+    {% if dashboard_analysis %}
+      <div class="alert alert-info text-start mt-3 mb-0" role="status">
+        <strong>Analisis Gemini</strong>
+        <div>{{ dashboard_analysis|linebreaks }}</div>
+      </div>
+    {% elif dashboard_analysis_error %}
+      <div class="alert alert-danger text-start mt-3 mb-0" role="alert">{{ dashboard_analysis_error }}</div>
+    {% endif %}
+  {% endif %}
+  <form class="gemini-chart-form text-start mt-3" method="post" action="{% url 'coffee_app:analyze_dashboard_chart' 'total_points' %}">
+    {% csrf_token %}
+    <button class="btn btn-coffee" type="submit">
+      <span class="spinner-border spinner-border-sm me-2 d-none" aria-hidden="true"></span>
+      <span>Analisis distribusi skor dengan Gemini</span>
+    </button>
+    <p class="gemini-chart-status small text-muted mt-2 mb-0" role="status" aria-live="polite"></p>
+  </form>
+</div></div>
+<script>
+  document.querySelectorAll(".gemini-chart-form").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      var button = form.querySelector("button");
+      button.disabled = true;
+      form.querySelector(".spinner-border").classList.remove("d-none");
+      form.querySelector("button span:last-child").textContent = "Menghubungi Gemini...";
+      form.querySelector(".gemini-chart-status").textContent = "Analisis sedang dibuat. Mohon tunggu.";
+    });
+  });
+</script>
+{% endblock %}

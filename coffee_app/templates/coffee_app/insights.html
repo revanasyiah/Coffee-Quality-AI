@@ -1,0 +1,81 @@
+{% extends 'coffee_app/base.html' %}{% load static %}
+{% block title %}Visualisasi &amp; Info · Coffee Quality AI{% endblock %}
+{% block content %}
+<h2 class="mb-3">Visualisasi &amp; Informasi</h2>
+
+<div class="card card-coffee mb-4"><div class="card-body">
+  <h5>Perbandingan algoritma</h5>
+  <div class="table-responsive"><table class="table table-sm align-middle">
+    <thead><tr><th>Model</th><th>CV MAE</th><th>CV RMSE</th><th>CV R²</th><th>Uji MAE</th><th>Uji MSE</th><th>Uji RMSE</th><th>Uji R²</th></tr></thead>
+    <tbody>
+    {% for r in rows %}<tr {% if r.name == meta.best_model %}class="table-warning"{% endif %}>
+      <td>{{ r.name }}{% if r.name == meta.best_model %} ★{% endif %}</td>
+      <td>{{ r.cv_MAE|floatformat:3 }}</td><td>{{ r.cv_RMSE|floatformat:3 }}</td><td>{{ r.cv_R2|floatformat:3 }}</td>
+      <td>{{ r.test_MAE|floatformat:3 }}</td><td>{{ r.test_MSE|floatformat:3 }}</td><td>{{ r.test_RMSE|floatformat:3 }}</td><td>{{ r.test_R2|floatformat:3 }}</td></tr>{% endfor %}
+    <tr class="text-muted"><td>Baseline (prediksi rata-rata)</td><td>-</td><td>-</td><td>-</td>
+      <td>{{ meta.baseline_test.MAE|floatformat:3 }}</td><td>{{ meta.baseline_test.MSE|floatformat:3 }}</td><td>{{ meta.baseline_test.RMSE|floatformat:3 }}</td><td>{{ meta.baseline_test.R2|floatformat:3 }}</td></tr>
+    </tbody></table></div>
+  <p class="small text-muted mb-0">CV = 5-fold cross-validation pada {{ meta.n_train }} data latih (dasar pemilihan model). "Uji" = {{ meta.n_test }} data uji yang tidak dipakai saat memilih model. Model terbaik: <strong>{{ meta.best_model }}</strong> (RMSE CV terendah).</p>
+  {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="algorithm_comparison" analysis_title="perbandingan algoritma" %}
+</div></div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Perbandingan model</h6><img class="img-fluid" src="{% static 'images/model_comparison.png' %}" alt="Perbandingan model">
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="model_comparison" analysis_title="perbandingan model" %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Data uji: aktual vs prediksi</h6><img class="img-fluid" src="{% static 'images/actual_vs_pred.png' %}" alt="Aktual vs prediksi">
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="actual_predicted" analysis_title="data uji aktual vs prediksi" %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Feature importance ({{ meta.best_model }})</h6><img class="img-fluid" src="{% static 'images/feature_importance.png' %}" alt="Feature importance">
+    <p class="small text-muted mt-2 mb-0">{% for k, v in imp %}{{ k }}: {{ v }}%{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="feature_importance" analysis_title="feature importance" %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Korelasi fitur numerik</h6><img class="img-fluid" src="{% static 'images/corr_numeric_features.png' %}" alt="Korelasi fitur numerik">
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="numeric_correlation" analysis_title="korelasi fitur numerik" %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Rata-rata skor per negara</h6><img class="img-fluid" src="{% static 'images/mean_by_country.png' %}" alt="Rata-rata per negara">
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="country_average" analysis_title="rata-rata skor per negara" %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Skor per metode pengolahan</h6><img class="img-fluid" src="{% static 'images/box_processing.png' %}" alt="Boxplot pengolahan">
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="processing_method" analysis_title="skor per metode pengolahan" %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h6>Mengapa skor sensorik tidak dipakai?</h6><img class="img-fluid" src="{% static 'images/corr_sensory_leakage.png' %}" alt="Korelasi skor sensorik">
+    <p class="small text-muted mt-2 mb-0">Total Cup Points = jumlah 10 skor sensorik (selisih maksimum 0,02 akibat pembulatan). Memakainya sebagai fitur membuat model hanya menghafal rumus (<em>data leakage</em>).</p>
+    {% include "coffee_app/includes/gemini_analysis_form.html" with analysis_type="sensory_leakage" analysis_title="kebocoran data skor sensorik" %}
+  </div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h5>Informasi dataset</h5>
+    <ul class="small mb-0">
+      <li>{{ meta.n_total }} baris, {{ meta.n_columns_raw }} kolom asli, {{ meta.n_countries }} negara.</li>
+      <li>Target: <strong>{{ meta.target }}</strong> (rata-rata {{ meta.target_stats.mean|floatformat:2 }}, std {{ meta.target_stats.std|floatformat:2 }}, median {{ meta.target_stats.median|floatformat:2 }}).</li>
+      <li>Fitur dipakai: {{ meta.features|join:", " }}.</li>
+      <li>Dikecualikan (leakage): {{ meta.excluded_leakage_columns|join:", " }}.</li>
+    </ul>
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-coffee h-100"><div class="card-body">
+    <h5>Tentang implementasi</h5>
+    <p class="small mb-0">Pipeline scikit-learn (imputasi, scaling, one-hot, model) disimpan dengan Joblib dan dimuat sekali oleh Django. Pada Modul 14 deployment memakai Streamlit (skrip tunggal, UI otomatis); di sini dipakai Django (URL, form tervalidasi, template, ORM untuk riwayat). Tujuannya sama: model dapat dipakai lewat antarmuka web.</p>
+  </div></div></div>
+</div>
+<script>
+  document.querySelectorAll(".gemini-insight-form").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      var button = form.querySelector("button");
+      button.disabled = true;
+      form.querySelector(".spinner-border").classList.remove("d-none");
+      form.querySelector(".gemini-insight-label").textContent = "Menghubungi Gemini...";
+      form.querySelector(".gemini-insight-status").textContent = "Analisis sedang dibuat. Mohon tunggu.";
+    });
+  });
+</script>
+{% endblock %}

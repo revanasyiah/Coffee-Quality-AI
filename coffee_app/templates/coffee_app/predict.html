@@ -1,0 +1,26 @@
+{% extends 'coffee_app/base.html' %}
+{% block title %}Prediksi · Coffee Quality AI{% endblock %}
+{% block content %}
+<h2 class="mb-1">Prediksi Kualitas Kopi</h2>
+<p class="text-muted">Isi karakteristik kopi berikut. Hasil berupa <strong>estimasi</strong> skor Total Cup Points berdasarkan pola pada dataset.</p>
+<form method="post" novalidate class="card card-coffee"><div class="card-body">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <h5 class="mb-3">Asal &amp; pengolahan</h5>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">{{ form.country.label_tag }}{{ form.country }}{% for e in form.country.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-6">{{ form.variety.label_tag }}{{ form.variety }}{% for e in form.variety.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-6">{{ form.processing_method.label_tag }}{{ form.processing_method }}{% for e in form.processing_method.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-6">{{ form.color.label_tag }}{{ form.color }}{% for e in form.color.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+  </div>
+  <h5 class="mb-3">Kondisi fisik biji</h5>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">{{ form.altitude.label_tag }}{{ form.altitude }}<div class="form-text">Rentang valid 100 – 3000 m.</div>{% for e in form.altitude.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-6">{{ form.moisture.label_tag }}{{ form.moisture }}<div class="form-text">Rentang valid 5 – 20 %.</div>{% for e in form.moisture.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-4">{{ form.category_one_defects.label_tag }}{{ form.category_one_defects }}{% for e in form.category_one_defects.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-4">{{ form.category_two_defects.label_tag }}{{ form.category_two_defects }}{% for e in form.category_two_defects.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="col-md-4">{{ form.quakers.label_tag }}{{ form.quakers }}{% for e in form.quakers.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+  </div>
+  <button type="submit" class="btn btn-coffee btn-lg">Prediksi kualitas</button>
+</div></form>
+{% endblock %}
